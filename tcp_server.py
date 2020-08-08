@@ -21,20 +21,14 @@ class TCPServer:
 
             while True:
                 data = conn.recv(1024)
-
                 if not data: break
+
                 print('[*] {} -> SERVER: Request received'.format(client))
-                res = '<html><header><title>PAGE</title><header><body>My Response</body></html>'
+
+                res = self.handle_request(data, client)
 
                 try:
-                    n = conn.sendto(bytes(''.join((
-                        'HTTP/1.1 200 OK\r\n',
-                        'Server: FromScratchServer\r\n',
-                        'Content-Type: text/html\r\n',
-                        'Content-Length: ' + str(len(bytes(res, 'utf-8'))) + '\r\n',
-                        '\r\n',
-                        res
-                        )), 'utf-8'), 0, client)
+                    n = conn.sendto(res, 0, client)
                     print('[*] SERVER -> {}: Sent {} bytes'.format(client, n))
                 except Exception as e:
                     print(e)
@@ -43,5 +37,10 @@ class TCPServer:
             
             print('[*] SERVER -> {}: Ending connection'.format(client))
     
+    # Override by subclasses
+    def handle_request(self, req, client):
+        res = ''
+        return res
+
     def close(self):
         self.s.close()
