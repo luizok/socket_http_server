@@ -8,6 +8,68 @@ PORT = 8080
 
 class HTTPServer(TCPServer):
 
+    def __init__(self, host='127.0.0.1', port=8080):
+        super().__init__(host, port)
+        self.status_code = {
+            100: 'Continue',
+            101: 'Switching Protocols',
+            200: 'OK',
+            201: 'Created',
+            202: 'Accepted',
+            203: 'Non-Authoritative Information',
+            204: 'No Content',
+            205: 'Reset Content',
+            206: 'Partial Content',
+            300: 'Multiple Choices',
+            301: 'Moved Permanently',
+            302: 'Found',
+            303: 'See Other',
+            304: 'Not Modified',
+            305: 'Use Proxy',
+            307: 'Temporary Redirect',
+            400: 'Bad Request',
+            401: 'Unauthorized',
+            402: 'Payment Required',
+            403: 'Forbidden',
+            404: 'Not Found',
+            405: 'Method Not Allowed',
+            406: 'Not Acceptable',
+            407: 'Proxy Authentication Required',
+            408: 'Request Time-out',
+            409: 'Conflict',
+            410: 'Gone',
+            411: 'Length Required',
+            412: 'Precondition Failed',
+            413: 'Request Entity Too Large',
+            414: 'Request-URI Too Large',
+            415: 'Unsupported Media Type',
+            416: 'Requested range not satisfiable',
+            417: 'Expectation Failed',
+            500: 'Internal Server Error',
+            501: 'Not Implemented',
+            502: 'Bad Gateway',
+            503: 'Service Unavailable',
+            504: 'Gateway Time-out',
+            505: 'HTTP Version not supported'
+        }
+
+    def build_response(self, http_v=1.1, code=200, content=None, headers={}):
+
+        res = ''
+        res += 'HTTP/{} '.format(http_v)
+        res += '{} {}\r\n'.format(code, self.status_code[code])
+
+        for k, v in headers.items():
+            res += '{}: {}\r\n'.format(k, v)
+
+        res += '\r\n'
+        res = bytes(res, 'utf-8')
+
+        if content:
+            res += content
+
+        return res
+
     def handle_request(self, req, client):
 
         req_path = req.decode('utf-8').split('\r\n')[0]
@@ -21,10 +83,11 @@ class HTTPServer(TCPServer):
         path = os.path.join(os.getcwd(), path[1:])
 
         if not os.path.isfile(path):
-            return bytes(''.join((
-                'HTTP/1.1 404 Not Found\r\n',
-                '\r\n'
-            )), 'utf-8')
+            return self.build_response(code=404, headers={
+                'Server': 'ScratchServer',
+                'Content-Type': 'text/html; charset=utf-8',
+                'Content-Length': '0',
+            })
 
         res = None
         if path.endswith('html'):
@@ -39,19 +102,14 @@ class HTTPServer(TCPServer):
         content = ''
         with open(path, 'r', encoding='utf-8') as fd:
             content = ''.join(fd.readlines())
-
         content = bytes(content, 'utf-8')
-        header = bytes(''.join([
-                'HTTP/1.1 200 OK\r\n',
-                'Server: ScratchServer\r\n',
-                'Content-Type: text/html; charset=utf-8\r\n',
-                'Content-Length: ' + str(len(content)) + '\r\n',
-                '\r\n'
-            ]),
-            'utf-8'
-        )
 
-        res = header + content
+        res = self.build_response(code=200, content=content, headers={
+            'Server': 'ScratchServer',
+            'Content-Type': 'text/html; charset=utf-8',
+            'Content-Length': str(len(content)),
+        })
+
         return res
 
     def parse_binary(self, method, path):
@@ -63,21 +121,16 @@ class HTTPServer(TCPServer):
                 content += byte
                 byte = fd.read(4096)
 
-        header = bytes(''.join([
-                'HTTP/1.1 200 OK\r\n',
-                'Server: ScratchServer\r\n',
-                'content-Type: image/ico\r\n',
-                'Content-Length: ' + str(len(content)) + '\r\n',
-                '\r\n'
-            ]),
-            'utf-8'
-        )
+        res = self.build_response(code=200, content=content, headers={
+            'Server': 'ScratchServer',
+            'Content-Type': 'image/ico',
+            'Content-Length': str(len(content)),
+        })
 
-        res = header + content
         return res
 
 
 if __name__ == '__main__':
 
-    server = HTTPServer()
+    server = HTTPServer('0.0.0.0')
     server.start()

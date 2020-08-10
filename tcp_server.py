@@ -23,8 +23,6 @@ class TCPServer:
                 data = conn.recv(1024)
                 if not data: break
 
-                print('[*] {} -> SERVER: Request received'.format(client))
-
                 res = self.handle_request(data, client)
 
                 try:
