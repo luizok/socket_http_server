@@ -1,6 +1,6 @@
 import socket
 import sys
-
+from threading import Thread
 
 class TCPServer:
 
@@ -19,26 +19,67 @@ class TCPServer:
             conn, client = self.s.accept()
             print('[*] {} -> SERVER: New Connection'.format(client))
 
-            while True:
-                data = conn.recv(1024)
-                if not data: break
-
-                res = self.handle_request(data, client)
-
-                try:
-                    n = conn.sendto(res, 0, client)
-                    print('[*] SERVER -> {}: Sent {} bytes'.format(client, n))
-                except Exception as e:
-                    print(e)
-                    server.close()
-                    sys.exit(-1)
-            
-            print('[*] SERVER -> {}: Ending connection'.format(client))
+            self.handle_new_client(conn, client)
     
     # Override by subclasses
+    def handle_new_client(self, conn, client):
+        return
+
+    # Override by subclasses
     def handle_request(self, req, client):
-        res = ''
-        return res
+        return
 
     def close(self):
         self.s.close()
+
+
+class TCPServerSingle(TCPServer):
+
+    def handle_new_client(self, conn, client):
+        while True:
+            data = conn.recv(1024)
+            if not data: break
+
+            res = self.handle_request(data, client)
+
+            try:
+                n = conn.sendto(res, 0, client)
+                print('[*] SERVER -> {}: Sent {} bytes'.format(client, n))
+            except Exception as e:
+                print(e)
+                self.conn.close()
+                sys.exit(-1)
+
+        print('[*] SERVER -> {}: Ending connection'.format(client))
+
+
+class ClientThread(Thread):
+
+    def __init__(self, conn, client, handle_request):
+        super().__init__()
+        self.conn = conn
+        self.client = client
+        self.handle_request = handle_request
+
+    def run(self):
+        while True:
+            data = self.conn.recv(1024)
+            if not data: break
+
+            res = self.handle_request(data, self.client)
+
+            try:
+                n = self.conn.sendto(res, 0, self.client)
+                print('[*] SERVER -> {}: Sent {} bytes'.format(self.client, n))
+            except Exception as e:
+                print(e)
+                self.conn.close()
+
+        print('[*] SERVER -> {}: Ending connection'.format(self.client))
+
+
+class TCPServerConcurrent(TCPServer):
+
+    def handle_new_client(self, conn, client):
+        t = ClientThread(conn, client, self.handle_request)
+        t.start()

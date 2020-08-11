@@ -1,8 +1,8 @@
-from tcp_server import TCPServer
+from tcp_server import TCPServerConcurrent
 import os
 
 
-class HTTPServer(TCPServer):
+class HTTPServer(TCPServerConcurrent):
 
     def __init__(self, host='127.0.0.1', port=8080):
         super().__init__(host, port)
@@ -86,9 +86,10 @@ class HTTPServer(TCPServer):
             })
 
         res = None
-        if path.endswith('html'):
+        ext = path.split('.')[-1]
+        if ext in ('html', 'txt'):
             res = self.parse_text(method, path)
-        elif path.endswith('ico'):
+        elif ext in ('ico', 'jpg', 'jpeg', 'png'):
             res = self.parse_binary(method, path)
 
         return res
