@@ -89,7 +89,7 @@ class HTTPServer(TCPServerConcurrent):
 
             res = None
             ext = path.split('.')[-1]
-            if ext in ('html', 'txt'):
+            if ext in ('html', 'txt', 'log'):
                 res = self.parse_text(method, path)
             elif ext in ('ico', 'jpg', 'jpeg', 'png'):
                 res = self.parse_binary(method, path)
