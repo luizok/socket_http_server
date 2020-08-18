@@ -72,6 +72,7 @@ class HTTPServer(TCPServerConcurrent):
         method, path, _ = req_path.split(' ')
 
         print('[*] {} -> SERVER: {} {}'.format(client, method, path))
+        self.log('{} -> SERVER: {} {}'.format(client, method, path))
 
         if method == 'GET':
             if path == '/':
