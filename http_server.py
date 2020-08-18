@@ -73,26 +73,33 @@ class HTTPServer(TCPServerConcurrent):
 
         print('[*] {} -> SERVER: {} {}'.format(client, method, path))
 
-        if path == '/':
-            path += 'index.html'
+        if method == 'GET':
+            if path == '/':
+                path += 'index.html'
 
-        path = os.path.join(os.getcwd(), path[1:])
+            path = os.path.join(os.getcwd(), path[1:])
 
-        if not os.path.isfile(path):
-            return self.build_response(code=404, headers={
-                'Server': 'ScratchServer',
-                'Content-Type': 'text/html; charset=utf-8',
-                'Content-Length': '0',
-            })
+            if not os.path.isfile(path):
+                return self.build_response(code=404, headers={
+                    'Server': 'ScratchServer',
+                    'Content-Type': 'text/html; charset=utf-8',
+                    'Content-Length': '0',
+                })
 
-        res = None
-        ext = path.split('.')[-1]
-        if ext in ('html', 'txt'):
-            res = self.parse_text(method, path)
-        elif ext in ('ico', 'jpg', 'jpeg', 'png'):
-            res = self.parse_binary(method, path)
+            res = None
+            ext = path.split('.')[-1]
+            if ext in ('html', 'txt'):
+                res = self.parse_text(method, path)
+            elif ext in ('ico', 'jpg', 'jpeg', 'png'):
+                res = self.parse_binary(method, path)
 
-        return res
+            return res
+
+        return self.build_response(code=405, headers={
+            'Server': 'ScratchServer',
+            'Content-Type': 'text/html; charset=utf-8',
+            'Content-Length': '0',
+        })
 
     def parse_text(self, method, path):
 
